@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type GenerateUxReport struct {
+type GenerateUxReportCmd struct {
 	Cmd  *cobra.Command
 	Args []string
 }
 
-func (c GenerateUxReport) New() *cobra.Command {
+func (c GenerateUxReportCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "gen-ux",
 		Short:   "Generate UX reports for your React.js project",
@@ -33,21 +33,17 @@ func (c GenerateUxReport) New() *cobra.Command {
 
 	cmd.Flags().BoolP("use-pa11y", "", false, "Use pa11y for running accessibility report")
 	cmd.Flags().BoolP("save-report", "", false, "Save parsed report in JSON format")
+	cmd.Flags().BoolP("use-ai", "", false, "Use LLMs for generating a summary on how to improve the UX and accessiblity")
 
 	return cmd
 }
 
-func (c GenerateUxReport) Handler() {
+func (c GenerateUxReportCmd) Handler() {
 	cmd := c.Cmd
 
-	usePa11y, err := cmd.Flags().GetBool("use-pa11y")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	saveReport, err := cmd.Flags().GetBool("save-report")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	usePa11y, _ := cmd.Flags().GetBool("use-pa11y")
+	saveReport, _ := cmd.Flags().GetBool("save-report")
+	useAi, _ := cmd.Flags().GetBool("use-ai")
 
 	if !helpers.IsNodeInstalled() {
 		log.Fatal("node is not installed")
@@ -79,4 +75,38 @@ func (c GenerateUxReport) Handler() {
 			}
 		}
 	}
+
+	if useAi {
+		config, err := helpers.ReadConfigFile()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		if config.Default != helpers.Gemini {
+			log.Fatal("only gemini is supported at the moment\n")
+		}
+
+		geminiKeyFound := true
+		var geminiKey string
+
+		for i := range config.Llms {
+			if config.Llms[i].Name == helpers.Gemini {
+				geminiKeyFound = true
+				geminiKey = config.Llms[i].ApiKey
+				break
+			}
+		}
+
+		if !geminiKeyFound {
+			log.Fatal("only gemini is supported at the moment and config file doesn't have gemini api key\n")
+		}
+
+		output, err := helpers.SendReqToGemini(geminiKey, "Generate a simple navbar with a hamburger menu using Chakra UI")
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		log.Println(output)
+	}
+
 }
