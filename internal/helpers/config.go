@@ -13,6 +13,7 @@ var (
 	Mistral     = "mistral"
 	Llama       = "llama"
 	Claude      = "claude"
+	Chatgpt     = "chatgpt"
 )
 
 type LlmConfig struct {

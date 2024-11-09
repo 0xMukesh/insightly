@@ -41,8 +41,11 @@ func (c SetupCmd) Handler() {
 		huh.NewGroup(
 			huh.NewNote().Title("something setup").Description("setup api keys of llms which you'd like to use"),
 			huh.NewMultiSelect[string]().Title("choose llms").Options(
-				huh.NewOption("gemini", "gemini"),
-				huh.NewOption("mistral", "mistral"),
+				huh.NewOption("gemini 1.5 flash", "gemini"),
+				huh.NewOption("mistral 3b", "mistral"),
+				huh.NewOption("llama 3.1", "llama"),
+				huh.NewOption("claude 3.5 sonnet", "claude"),
+				huh.NewOption("chatgpt 4o", "chatgpt"),
 			).Value(&llms).Filterable(true),
 		),
 	)
@@ -83,7 +86,13 @@ func (c SetupCmd) Handler() {
 		options = append(options, huh.NewOption(llms[i], llms[i]))
 	}
 
-	defaultLlmForm := huh.NewForm(huh.NewGroup(huh.NewSelect[string]().Title("choose your default llm").Options(options...).Value(&defaultLlm)))
+	defaultLlmForm := huh.NewForm(huh.NewGroup(huh.NewSelect[string]().Title("choose your default llm").Options(options...).Value(&defaultLlm).Validate(func(s string) error {
+		if s == "" {
+			return errors.New("choose a llm as your default llm")
+		}
+
+		return nil
+	})))
 
 	if err := defaultLlmForm.Run(); err != nil {
 		log.Fatal(err.Error())

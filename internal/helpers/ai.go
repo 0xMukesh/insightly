@@ -11,21 +11,23 @@ import (
 )
 
 type GeminiReqPayload struct {
-	Contents []struct {
-		Parts []struct {
-			Text string
-		}
-	}
+	Contents []Content `json:"contents"`
 }
 
 type GeminiResp struct {
-	Candidates []struct {
-		Content struct {
-			Parts []struct {
-				Text string
-			}
-		}
-	}
+	Candidates []Candidate `json:"candidates"`
+}
+
+type Candidate struct {
+	Content Content
+}
+
+type Content struct {
+	Parts []Part `json:"parts"`
+}
+
+type Part struct {
+	Text string `json:"text"`
 }
 
 func ParseGeminiOutput(input string) string {
@@ -54,9 +56,24 @@ func SendReqToGemini(apiKey string, prompt string) (string, error) {
 	client := http.Client{}
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=%s", apiKey)
 
-	payload := fmt.Sprintf(`{"contents":[{"parts":[{"text":"%s"}]}]}`, prompt)
+	payload := GeminiReqPayload{
+		Contents: []Content{
+			{
+				Parts: []Part{
+					{
+						Text: prompt,
+					},
+				},
+			},
+		},
+	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(payload)))
+	payloadBytes, err := json.Marshal(&payload)
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return "", err
 	}
