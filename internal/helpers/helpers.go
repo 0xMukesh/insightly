@@ -1,13 +1,15 @@
 package helpers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/0xmukesh/ratemywebsite/internal/utils"
 )
 
 func IsNodeInstalled() bool {
@@ -74,7 +76,7 @@ func GenerateLighthouseReport(website string) (LighthouseReport, error) {
 
 		err := cmd.Run()
 		if err != nil {
-			log.Fatal(err.Error())
+			utils.LogF(err.Error())
 		}
 	}()
 
@@ -102,4 +104,42 @@ func GenerateLighthouseReport(website string) (LighthouseReport, error) {
 	}
 
 	return lighthouseReport, nil
+}
+
+func DisplayInVim(content string) error {
+	vimCommands := strings.Join([]string{
+		"set noswapfile",
+		"set number",
+		"syntax on",
+		"set ft=markdown",
+		"set autoindent",
+		"set conceallevel=2",
+		"set background=dark",
+		"colorscheme industry",
+		"set expandtab",
+		"set tabstop=2",
+		"set shiftwidth=2",
+		"set wrap",
+		"set linebreak",
+		"set breakindent",
+		"hi link markdownError NONE",
+		"set cole=2",
+		"hi markdownH1 cterm=bold ctermfg=blue",
+		"hi markdownH2 cterm=bold ctermfg=cyan",
+		"hi markdownLinkText cterm=underline ctermfg=green",
+		"hi markdownUrl cterm=underline ctermfg=green",
+		"hi markdownCode ctermfg=yellow",
+		"hi markdownCodeBlock ctermfg=yellow",
+	}, " | ")
+
+	cmd := exec.Command("vim", "-c", vimCommands, "-")
+	cmd.Stdin = bytes.NewBufferString(content)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }

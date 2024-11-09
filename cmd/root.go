@@ -20,9 +20,11 @@ func Execute() error {
 
 	genUxCmd := commands.GenerateUxReportCmd{}
 	setupCmd := commands.SetupCmd{}
+	configCmd := commands.ConfigCmd{}
 
 	rootCmd.AddCommand(genUxCmd.New())
 	rootCmd.AddCommand(setupCmd.New())
+	rootCmd.AddCommand(configCmd.New())
 
 	return rootCmd.ExecuteContext(context.Background())
 }

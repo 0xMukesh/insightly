@@ -1,13 +1,12 @@
 package main
 
 import (
-	"log"
-
 	"github.com/0xmukesh/ratemywebsite/cmd"
+	"github.com/0xmukesh/ratemywebsite/internal/utils"
 )
 
 func main() {
 	if err := cmd.Execute(); err != nil {
-		log.Fatal(err)
+		utils.LogF(err.Error())
 	}
 }

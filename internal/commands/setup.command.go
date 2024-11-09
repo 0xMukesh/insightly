@@ -3,16 +3,15 @@ package commands
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/0xmukesh/ratemywebsite/internal/helpers"
+	"github.com/0xmukesh/ratemywebsite/internal/utils"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
 
 type SetupCmd struct {
-	Cmd  *cobra.Command
-	Args []string
+	BaseCmd
 }
 
 func (c SetupCmd) New() *cobra.Command {
@@ -20,12 +19,13 @@ func (c SetupCmd) New() *cobra.Command {
 		Use:     "setup",
 		Short:   "Setup your API keys for different LLMs and store it locally",
 		Example: "something setup",
-		Aliases: []string{},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
 			c.Args = args
 
-			c.Handler()
+			if err := c.Handler(); err != nil {
+				utils.LogF(err.Error())
+			}
 
 			return nil
 		},
@@ -34,56 +34,60 @@ func (c SetupCmd) New() *cobra.Command {
 	return cmd
 }
 
-func (c SetupCmd) Handler() {
-	var llms []string
+func (c SetupCmd) Handler() error {
+	var selectedLlms []string
 
 	llmsForm := huh.NewForm(
 		huh.NewGroup(
 			huh.NewNote().Title("something setup").Description("setup api keys of llms which you'd like to use"),
 			huh.NewMultiSelect[string]().Title("choose llms").Options(
 				huh.NewOption("gemini 1.5 flash", "gemini"),
-				huh.NewOption("mistral 3b", "mistral"),
+				huh.NewOption("mistral 7b instruct", "mistral"),
 				huh.NewOption("llama 3.1", "llama"),
 				huh.NewOption("claude 3.5 sonnet", "claude"),
 				huh.NewOption("chatgpt 4o", "chatgpt"),
-			).Value(&llms).Filterable(true),
+			).Value(&selectedLlms).Filterable(true).Validate(func(s []string) error {
+				if len(s) == 0 {
+					return errors.New("atleast select one model")
+				}
+
+				return nil
+			}),
 		),
 	)
 
 	if err := llmsForm.Run(); err != nil {
-		log.Fatal(err.Error())
+		utils.LogF(err.Error())
 	}
 
-	llmsConfig := make([]helpers.LlmConfig, len(llms))
+	llmsConfig := make([]helpers.LlmConfig, len(selectedLlms))
 
-	if len(llms) != 0 {
-		var fields []huh.Field
+	var keysFormFields []huh.Field
 
-		for i := range llms {
-			llmsConfig[i].Name = helpers.Llm(llms[i])
+	for i := range selectedLlms {
+		llmsConfig[i].Name = helpers.Llm(selectedLlms[i])
 
-			fields = append(fields, huh.NewInput().Title(fmt.Sprintf("input your api key for %s LLM", llms[i])).Value(&llmsConfig[i].ApiKey).EchoMode(huh.EchoModePassword).Validate(func(s string) error {
-				if len(s) == 0 {
-					return errors.New("input an API key")
-				}
+		keysFormFields = append(keysFormFields, huh.NewInput().Title(fmt.Sprintf("input your api key for %s LLM", selectedLlms[i])).Value(&llmsConfig[i].ApiKey).EchoMode(huh.EchoModePassword).Validate(func(s string) error {
+			if len(s) == 0 {
+				return errors.New("input an API key")
+			}
 
-				return nil
-			},
-			))
-		}
+			return nil
+		},
+		))
+	}
 
-		keysForm := huh.NewForm(huh.NewGroup(fields...))
+	keysForm := huh.NewForm(huh.NewGroup(keysFormFields...))
 
-		if err := keysForm.Run(); err != nil {
-			log.Fatal(err.Error())
-		}
+	if err := keysForm.Run(); err != nil {
+		return err
 	}
 
 	var defaultLlm string
 	var options []huh.Option[string]
 
-	for i := range llms {
-		options = append(options, huh.NewOption(llms[i], llms[i]))
+	for i := range selectedLlms {
+		options = append(options, huh.NewOption(selectedLlms[i], selectedLlms[i]))
 	}
 
 	defaultLlmForm := huh.NewForm(huh.NewGroup(huh.NewSelect[string]().Title("choose your default llm").Options(options...).Value(&defaultLlm).Validate(func(s string) error {
@@ -95,7 +99,7 @@ func (c SetupCmd) Handler() {
 	})))
 
 	if err := defaultLlmForm.Run(); err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
 	configFile := helpers.ConfigFile{
@@ -104,6 +108,10 @@ func (c SetupCmd) Handler() {
 	}
 
 	if err := helpers.WriteToConfigFile(configFile); err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
+
+	fmt.Printf("Successfully saved LLM configuration with %s as your default LLM. Now you can use commands like `gen-ux\n`", defaultLlm)
+
+	return nil
 }

@@ -3,10 +3,9 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -17,16 +16,15 @@ import (
 )
 
 type GenerateUxReportCmd struct {
-	Cmd  *cobra.Command
-	Args []string
+	BaseCmd
 }
 
 func (c GenerateUxReportCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "gen-ux",
 		Short:   "Generate UX reports",
-		Example: "something gen-ux [website-url] [file-path]",
-		Aliases: []string{"generate-ux", "gux"},
+		Example: "something gen-ux [website-url]",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
 			c.Args = args
@@ -40,6 +38,7 @@ func (c GenerateUxReportCmd) New() *cobra.Command {
 	cmd.Flags().BoolP("use-pa11y", "", false, "Use pa11y for running accessibility report")
 	cmd.Flags().BoolP("save-report", "", false, "Save parsed report in JSON format")
 	cmd.Flags().BoolP("use-ai", "", false, "Use LLMs for generating a summary on how to improve the UX and accessiblity")
+	cmd.Flags().String("llm", "", "Use other LLM than your default LLM")
 
 	return cmd
 }
@@ -51,14 +50,28 @@ func (c GenerateUxReportCmd) Handler() {
 	usePa11y, _ := cmd.Flags().GetBool("use-pa11y")
 	saveReport, _ := cmd.Flags().GetBool("save-report")
 	useAi, _ := cmd.Flags().GetBool("use-ai")
+	nonDefaultLlm, _ := cmd.Flags().GetString("llm")
 	websiteUrl := args[0]
 
+	config, err := helpers.ReadConfigFile()
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			utils.LogF("It seems like you're trying to run `gen-ux` command before setting up your LLM configuration. Run `setup` to setup your LLM configuration")
+		}
+
+		utils.LogF(err.Error())
+	}
+
+	if len(config.Llms) == 0 {
+		utils.LogF("It seems like you're trying to run `gen-ux` command before setting up your LLM configuration. Run `setup` to setup your LLM configuration")
+	}
+
 	if !utils.IsValidUrl(websiteUrl) {
-		log.Fatal("invalid url")
+		utils.LogF("Invalid website URL")
 	}
 
 	if !helpers.IsNodeInstalled() {
-		log.Fatal("node is not installed")
+		utils.LogF("For running UX reports, Node.js must be installed")
 	}
 
 	var accessibilityReport string
@@ -66,46 +79,48 @@ func (c GenerateUxReportCmd) Handler() {
 
 	if usePa11y {
 		if !helpers.IsPa11yInstalled() {
-			log.Fatal("pa11y is not installed")
+			utils.LogF("Pa11y is not installed. Install it via running `npm install -g pa11y`")
 		}
 
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 		s.Suffix = " generating UX report using pa11y"
 		s.Start()
-		report, err := helpers.GeneratePa11yReport(websiteUrl)
+		pa11yReport, err := helpers.GeneratePa11yReport(websiteUrl)
 		s.Stop()
 		if err != nil {
-			log.Fatal(err.Error())
+			utils.LogF(err.Error())
 		}
 
 		buffer := &bytes.Buffer{}
 		encoder := json.NewEncoder(buffer)
 		encoder.SetEscapeHTML(false)
+		encoder.SetIndent("", " ")
 
-		if err := encoder.Encode(&report); err != nil {
-			log.Fatal(err.Error())
+		if err := encoder.Encode(&pa11yReport); err != nil {
+			utils.LogF(err.Error())
 		}
 
 		accessibilityReport = buffer.String()
 
 		if saveReport {
 			if err := os.WriteFile("report.json", buffer.Bytes(), 0644); err != nil {
-				log.Fatal(err.Error())
+				utils.LogF(err.Error())
 			}
 
-			fmt.Println("saved UX report to report.json")
+			fmt.Println("Saved UX reports to `report.json`")
 		}
+
 	} else {
 		if !helpers.IsLighthouseInstalled() {
-			log.Fatal("lighthouse is not installed")
+			utils.LogF("Lighthouse is not installed. Install it via running `npm install -g lighthouse`")
 		}
 
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 		s.Suffix = " generating UX report using lighthouse"
 		s.Start()
-		report, err := helpers.GenerateLighthouseReport(websiteUrl)
+		lighthouseReport, err := helpers.GenerateLighthouseReport(websiteUrl)
 		if err != nil {
-			log.Fatal(err.Error())
+			utils.LogF(err.Error())
 		}
 		s.Stop()
 
@@ -121,7 +136,7 @@ func (c GenerateUxReportCmd) Handler() {
 
 		var audits []helpers.LighthouseAudit
 
-		for _, v := range report.Audits {
+		for _, v := range lighthouseReport.Audits {
 			if v.Id == "first-contentful-paint" {
 				firstContentfulPaintTime = fmt.Sprintf("%.2f%s", v.NumericValue, utils.ConvertNumericUnits(v.NumericUnit))
 			}
@@ -157,16 +172,35 @@ func (c GenerateUxReportCmd) Handler() {
 
 		metrics = append(metrics, firstContentfulPaintTime, firstMeaningfulPaintTime, largestContentfulPaintTime, speedIndex, totalBlockingTime)
 
-		auditsBytes, err := json.Marshal(audits)
-		if err != nil {
-			log.Fatal(err.Error())
+		parsedReport := struct {
+			Metrics map[string]string         `json:"metrics"`
+			Audits  []helpers.LighthouseAudit `json:"audits"`
+		}{
+			Metrics: map[string]string{
+				"score":                    metrics[0],
+				"first_contentful_paint":   metrics[1],
+				"first_meaningful_paint":   metrics[2],
+				"largest_contentful_paint": metrics[3],
+				"speed_index":              metrics[4],
+				"total_blocking_time":      metrics[5],
+			},
+			Audits: audits,
 		}
 
-		accessibilityReport = string(auditsBytes)
+		buffer := &bytes.Buffer{}
+		encoder := json.NewEncoder(buffer)
+		encoder.SetEscapeHTML(false)
+		encoder.SetIndent("", " ")
+
+		if err := encoder.Encode(&parsedReport); err != nil {
+			utils.LogF(err.Error())
+		}
+
+		accessibilityReport = buffer.String()
 
 		if saveReport {
-			if err := os.WriteFile("report.json", auditsBytes, 0644); err != nil {
-				log.Fatal(err.Error())
+			if err := os.WriteFile("report.json", buffer.Bytes(), 0644); err != nil {
+				utils.LogF(err.Error())
 			}
 		}
 	}
@@ -174,95 +208,85 @@ func (c GenerateUxReportCmd) Handler() {
 	if useAi {
 		config, err := helpers.ReadConfigFile()
 		if err != nil {
-			log.Fatal(err.Error())
+			utils.LogF(err.Error())
 		}
 
-		if config.Default != helpers.Gemini {
-			log.Fatal("only gemini is supported at the moment\n")
-		}
+		var llmName string
+		var key string
 
-		geminiKeyFound := true
-		var geminiKey string
-
-		for i := range config.Llms {
-			if config.Llms[i].Name == helpers.Gemini {
-				geminiKeyFound = true
-				geminiKey = config.Llms[i].ApiKey
-				break
+		if nonDefaultLlm != "" {
+			if nonDefaultLlm != string(helpers.Gemini) && nonDefaultLlm != string(helpers.Mistral) {
+				utils.LogF(fmt.Sprintf("%s LLM is not supported right now. Only Gemini and Gemma are supported", config.Default))
 			}
-		}
 
-		if !geminiKeyFound {
-			log.Fatal("only gemini is supported at the moment and config file doesn't have gemini api key\n")
+			apiKey, err := helpers.GetLlmKey(nonDefaultLlm)
+			if err != nil {
+				utils.LogF(err.Error())
+			}
+
+			llmName = nonDefaultLlm
+			key = apiKey
+		} else {
+			if config.Default != helpers.Gemini && config.Default != helpers.Mistral {
+				utils.LogF(fmt.Sprintf("%s LLM is not supported right now. Only Gemini and Gemma are supported", config.Default))
+			}
+
+			apiKey, err := helpers.GetLlmKey(string(config.Default))
+			if err != nil {
+				utils.LogF(err.Error())
+			}
+
+			llmName = string(config.Default)
+			key = apiKey
 		}
 
 		var prompt string
 
 		if usePa11y {
-			prompt += "Here is an accessibility report generated by pa11y. It is in JSON format and it contains the `code`, `message` and `context`.\n"
+			prompt += `Please restructure the pa11y report into a structured format, highlighting key issues and their corresponding solutions. Employ technical language and leverage specific data from the report. In the "Additional Considerations" section, categorize recommendations based on SEO, performance, and accessibility, focusing on major and critical points. The Pa11y repot is JSON format and it contains "code", "message" and "context". Just show the structured format irrespective of whether there is a single issue. Respond in markdown. No need to re-mention the issues. Don't have any additional footer text. Don't generate a table of issues. `
+			prompt += "\n"
 			prompt += fmt.Sprintf("```\n%s```\n", accessibilityReport)
-			prompt += "Give suggestions regarding how to improve the accessibility and how to fix the errors mentioned by pa11y. Just only the solutions for those issues and also few other suggestions regarding how to improve the UX and accessiblity. Don't render a table of the JSON input. Just mention solution of every issue in a list style manner."
 		} else {
-			prompt += "Here is a report with audits generated by lighthouse. It is in JSON format and it contains the `score` (which ranges from 0 to 1) for individual audit\n"
+			prompt += `Please restructure the Lighthouse report into a structured format, highlighting key issues and their corresponding solutions. Employ technical language and leverage specific data from the report. In the "Additional Considerations" section, categorize recommendations based on SEO, performance, and accessibility, focusing on major and critical points. Just show the structured format irrespective of whether there is a single issue. Respond in markdown. No need to re-mention the issues. Don't generate a table of issues. Don't have any additional footer text`
+			prompt += "\n"
 			prompt += fmt.Sprintf("```\n%s```\n", accessibilityReport)
-			prompt += "Taking score in consideration, give suggestions on how to improve the accessiblity and UX in the website. Just mention solution in a list styled manner"
-
-			if err := os.WriteFile("prompt.txt", []byte(prompt), 0644); err != nil {
-				log.Fatal(err.Error())
-			}
 		}
 
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-		s.Suffix = " sending prompt to gemini"
+		s.Suffix = fmt.Sprintf(" sending prompt to %s", llmName)
 		s.Start()
-		output, err := helpers.SendReqToGemini(geminiKey, prompt)
-		if err != nil {
-			log.Fatal(err.Error())
+
+		var output string
+
+		if llmName == string(helpers.Gemini) {
+			output, err = helpers.QueryGemini(key, prompt)
+			if err != nil {
+				utils.LogF(err.Error())
+			}
+		} else if llmName == string(helpers.Mistral) {
+			prompt = prompt + "\nEND_OF_PROMPT"
+			output, err = helpers.QueryHuggingFace(key, "mistralai/Mistral-7B-Instruct-v0.3", prompt)
+			if err != nil {
+				utils.LogF(err.Error())
+			}
+
+			output = strings.Split(output, "END_OF_PROMPT")[1]
 		}
+
 		s.Stop()
 
 		if !usePa11y {
 			output = fmt.Sprintf(`* **Metrics**:
-			1. Score - %s
-			2. First contentful paint - %s
-			3. First meaningful paint - %s
-			4. Largest meaningful paint - %s
-			5. Speed index - %s
-			6. Total blocking time - %s`, metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5]) + "\n\n" + output
+1. Score - %s
+2. First contentful paint - %s
+3. First meaningful paint - %s
+4. Largest meaningful paint - %s
+5. Speed index - %s
+6. Total blocking time - %s`, metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5]) + "\n\n" + output
 		}
 
-		vimCommands := strings.Join([]string{
-			"set noswapfile",
-			"set number",
-			"syntax on",
-			"set ft=markdown",
-			"set autoindent",
-			"set conceallevel=2",
-			"set background=dark",
-			"colorscheme industry",
-			"set expandtab",
-			"set tabstop=2",
-			"set shiftwidth=2",
-			"set wrap",
-			"set linebreak",
-			"set breakindent",
-			"hi link markdownError NONE",
-			"set cole=2",
-			"hi markdownH1 cterm=bold ctermfg=blue",
-			"hi markdownH2 cterm=bold ctermfg=cyan",
-			"hi markdownLinkText cterm=underline ctermfg=green",
-			"hi markdownUrl cterm=underline ctermfg=green",
-			"hi markdownCode ctermfg=yellow",
-			"hi markdownCodeBlock ctermfg=yellow",
-		}, " | ")
-
-		cmd := exec.Command("vim", "-c", vimCommands, "-")
-		cmd.Stdin = bytes.NewBufferString(output)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			log.Fatal(err.Error())
+		if err := helpers.DisplayInVim(output); err != nil {
+			utils.LogF(err.Error())
 		}
 	}
 

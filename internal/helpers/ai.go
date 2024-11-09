@@ -2,12 +2,16 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/huggingface"
 )
 
 type GeminiReqPayload struct {
@@ -52,7 +56,7 @@ func ParseGeminiOutput(input string) string {
 	return result.String()
 }
 
-func SendReqToGemini(apiKey string, prompt string) (string, error) {
+func QueryGemini(apiKey string, prompt string) (string, error) {
 	client := http.Client{}
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=%s", apiKey)
 
@@ -100,4 +104,27 @@ func SendReqToGemini(apiKey string, prompt string) (string, error) {
 
 	parsedOutput := ParseGeminiOutput(data.Candidates[0].Content.Parts[0].Text)
 	return parsedOutput, nil
+}
+
+func QueryHuggingFace(apiKey, modelName, prompt string) (string, error) {
+	llm, err := huggingface.New(
+		huggingface.WithToken(apiKey),
+		huggingface.WithModel(modelName),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	ctx := context.Background()
+	completion, err := llms.GenerateFromSinglePrompt(
+		ctx,
+		llm,
+		prompt,
+		llms.WithTemperature(0.1),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return completion, err
 }

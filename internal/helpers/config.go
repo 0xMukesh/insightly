@@ -2,28 +2,32 @@ package helpers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Llm string
 
 var (
 	Gemini  Llm = "gemini"
-	Mistral     = "mistral"
-	Llama       = "llama"
-	Claude      = "claude"
-	Chatgpt     = "chatgpt"
+	Mistral Llm = "mistral"
+	Llama   Llm = "llama"
+	Claude  Llm = "claude"
+	Chatgpt Llm = "chatgpt"
 )
 
+var ValidLlms = []string{string(Gemini), string(Mistral), string(Llama), string(Claude), string(Chatgpt)}
+
 type LlmConfig struct {
-	Name   Llm    `json:"name"`
-	ApiKey string `json:"api_key"`
+	Name   Llm    `json:"name" mapstructure:"name"`
+	ApiKey string `json:"api_key" mapstructure:"api_key"`
 }
 
 type ConfigFile struct {
-	Default Llm         `json:"default"`
-	Llms    []LlmConfig `json:"llms"`
+	Default Llm         `json:"default" mapstructure:"default"`
+	Llms    []LlmConfig `json:"llms" mapstructure:"llms"`
 }
 
 func GetConfigFilePath() string {
@@ -57,4 +61,27 @@ func ReadConfigFile() (ConfigFile, error) {
 	}
 
 	return configFile, nil
+}
+
+func DoesConfigFileExists() bool {
+	if _, err := os.Stat(GetConfigFilePath()); err != nil {
+		return false
+	}
+
+	return true
+}
+
+func GetLlmKey(llmName string) (string, error) {
+	config, err := ReadConfigFile()
+	if err != nil {
+		return "", err
+	}
+
+	for i := range config.Llms {
+		if config.Llms[i].Name == Llm(strings.ToLower(llmName)) {
+			return config.Llms[i].ApiKey, nil
+		}
+	}
+
+	return "", errors.New("invalid llm")
 }
