@@ -1,0 +1,52 @@
+[
+ {
+  "code": "WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2",
+  "message": "The html element should have a lang or xml:lang attribute which describes the language of the document.",
+  "context": "<html class=\"no-js\"><head>\n    <title>Sam Altman</t...</html>"
+ },
+ {
+  "code": "WCAG2AA.Principle4.Guideline4_1.4_1_2.H91.A.NoContent",
+  "message": "Anchor element found with a valid href attribute, but no link content has been supplied.",
+  "context": "<a href=\"https://posthaven.com/\"><div class=\"posthaven-tab\"></di...</a>"
+ },
+ {
+  "code": "WCAG2AA.Principle1.Guideline1_1.1_1_1.H37",
+  "message": "Img element missing an alt attribute. Use the alt attribute to specify a short text alternative.",
+  "context": "<img class=\"posthaven-gallery-image\" src=\"https://phaven-prod.s3.amazonaws.com/files/image_part/asset/2831322/GkJUE4udQtYQW_H6ppnzsNo7cZ8/medium_FEP-edited-small.png\" data-posthaven-state=\"processed\" data-medium-src=\"https://phaven-prod.s3.amazonaws...."
+ },
+ {
+  "code": "WCAG2AA.Principle1.Guideline1_1.1_1_1.H37",
+  "message": "Img element missing an alt attribute. Use the alt attribute to specify a short text alternative.",
+  "context": "<img class=\"posthaven-gallery-image\" src=\"https://phaven-prod.s3.amazonaws.com/files/image_part/asset/2779845/2_Q4jvs8eBye40c9jring6AP1eM/medium_Screen_Shot_2022-04-06_at_11.12.20_AM.png\" data-posthaven-state=\"processed\" data-medium-src=\"https://phav..."
+ },
+ {
+  "code": "WCAG2AA.Principle4.Guideline4_1.4_1_2.H91.InputText.Name",
+  "message": "This textinput element does not have a name available to an accessibility API. Valid names are: label element, title undefined, aria-label undefined, aria-labelledby undefined.",
+  "context": "<input name=\"email_address\" placeholder=\"Email Address\" type=\"text\">"
+ },
+ {
+  "code": "WCAG2AA.Principle1.Guideline1_3.1_3_1.F68",
+  "message": "This form field should be labelled in some way. Use the label element (either with a \"for\" attribute or wrapped around the form field), or \"title\", \"aria-label\" or \"aria-labelledby\" attributes as appropriate.",
+  "context": "<input name=\"email_address\" placeholder=\"Email Address\" type=\"text\">"
+ },
+ {
+  "code": "WCAG2AA.Principle3.Guideline3_2.3_2_2.H32.2",
+  "message": "This form does not contain a submit button, which creates issues for those who cannot submit the form using the keyboard. Submit buttons are INPUT elements with type attribute \"submit\" or \"image\", or BUTTON elements with type \"submit\" or omitted/invalid.",
+  "context": "<form action=\"/archive\" class=\"posthaven-archive-form\">\n<input name=\"query\" placeholde...</form>"
+ },
+ {
+  "code": "WCAG2AA.Principle4.Guideline4_1.4_1_2.H91.InputText.Name",
+  "message": "This textinput element does not have a name available to an accessibility API. Valid names are: label element, title undefined, aria-label undefined, aria-labelledby undefined.",
+  "context": "<input name=\"query\" placeholder=\"Search this site...\" type=\"text\">"
+ },
+ {
+  "code": "WCAG2AA.Principle1.Guideline1_3.1_3_1.F68",
+  "message": "This form field should be labelled in some way. Use the label element (either with a \"for\" attribute or wrapped around the form field), or \"title\", \"aria-label\" or \"aria-labelledby\" attributes as appropriate.",
+  "context": "<input name=\"query\" placeholder=\"Search this site...\" type=\"text\">"
+ },
+ {
+  "code": "WCAG2AA.Principle4.Guideline4_1.4_1_2.H91.A.NoContent",
+  "message": "Anchor element found with a valid href attribute, but no link content has been supplied.",
+  "context": "<a href=\"http://blog.samaltman.com/posts.atom\">\n    <span class=\"feed-icon\"></...</a>"
+ }
+]

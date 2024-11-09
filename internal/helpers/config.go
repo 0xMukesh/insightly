@@ -16,9 +16,10 @@ var (
 	Llama   Llm = "llama"
 	Claude  Llm = "claude"
 	Chatgpt Llm = "chatgpt"
+	Qwen    Llm = "qwen"
 )
 
-var ValidLlms = []string{string(Gemini), string(Mistral), string(Llama), string(Claude), string(Chatgpt)}
+var ValidLlms = []string{string(Gemini), string(Mistral), string(Llama), string(Claude), string(Chatgpt), string(Qwen)}
 
 type LlmConfig struct {
 	Name   Llm    `json:"name" mapstructure:"name"`

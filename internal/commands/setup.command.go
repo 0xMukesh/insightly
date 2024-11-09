@@ -43,6 +43,7 @@ func (c SetupCmd) Handler() error {
 			huh.NewMultiSelect[string]().Title("choose llms").Options(
 				huh.NewOption("gemini 1.5 flash", "gemini"),
 				huh.NewOption("mistral 7b instruct", "mistral"),
+				huh.NewOption("qwen 2.5 7b instruct", "qwen"),
 				huh.NewOption("llama 3.1", "llama"),
 				huh.NewOption("claude 3.5 sonnet", "claude"),
 				huh.NewOption("chatgpt 4o", "chatgpt"),
