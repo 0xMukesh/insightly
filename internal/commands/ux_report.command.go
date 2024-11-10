@@ -39,7 +39,7 @@ func (c GenerateUxReportCmd) New() *cobra.Command {
 	cmd.Flags().BoolP("use-pa11y", "", false, "Use pa11y for running accessibility report")
 	cmd.Flags().BoolP("save-report", "", false, "Save parsed report in JSON format")
 	cmd.Flags().BoolP("use-ai", "", false, "Use LLMs for generating a summary on how to improve the UX and accessiblity")
-	cmd.Flags().String("llm", "", "Use other LLM than your default LLM")
+	cmd.Flags().String("llm", "", "Use any other LLM than your default LLM")
 
 	return cmd
 }
