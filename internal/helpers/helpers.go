@@ -106,12 +106,12 @@ func GenerateLighthouseReport(website string) (LighthouseReport, error) {
 	return lighthouseReport, nil
 }
 
-func DisplayInVim(content string) error {
+func DisplayInVim(content string, filetype string) error {
 	vimCommands := strings.Join([]string{
 		"set noswapfile",
 		"set number",
 		"syntax on",
-		"set ft=markdown",
+		fmt.Sprintf("set ft=%s", filetype),
 		"set autoindent",
 		"set conceallevel=2",
 		"set background=dark",

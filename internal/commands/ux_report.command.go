@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/0xmukesh/ratemywebsite/internal/helpers"
+	"github.com/0xmukesh/ratemywebsite/internal/helpers/styles"
 	"github.com/0xmukesh/ratemywebsite/internal/utils"
 	"github.com/briandowns/spinner"
 	"github.com/spf13/cobra"
@@ -56,22 +57,22 @@ func (c GenerateUxReportCmd) Handler() {
 	config, err := helpers.ReadConfigFile()
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			utils.LogF("It seems like you're trying to run `gen-ux` command before setting up your LLM configuration. Run `setup` to setup your LLM configuration")
+			utils.LogF("❌ It seems like you're trying to run `gen-ux` command before setting up your LLM configuration. Run `setup` to setup your LLM configuration")
 		}
 
 		utils.LogF(err.Error())
 	}
 
 	if len(config.Llms) == 0 {
-		utils.LogF("It seems like you're trying to run `gen-ux` command before setting up your LLM configuration. Run `setup` to setup your LLM configuration")
+		utils.LogF("❌ It seems like you're trying to run `gen-ux` command before setting up your LLM configuration. Run `setup` to setup your LLM configuration")
 	}
 
 	if !utils.IsValidUrl(websiteUrl) {
-		utils.LogF("Invalid website URL")
+		utils.LogF("❌ Invalid website URL")
 	}
 
 	if !helpers.IsNodeInstalled() {
-		utils.LogF("For running UX reports, Node.js must be installed")
+		utils.LogF("❌ For running UX reports, Node.js must be installed")
 	}
 
 	var accessibilityReport string
@@ -79,11 +80,11 @@ func (c GenerateUxReportCmd) Handler() {
 
 	if usePa11y {
 		if !helpers.IsPa11yInstalled() {
-			utils.LogF("Pa11y is not installed. Install it via running `npm install -g pa11y`")
+			utils.LogF("❌ Pa11y is not installed. Install it via running `npm install -g pa11y`")
 		}
 
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-		s.Suffix = " generating UX report using pa11y"
+		s.Suffix = fmt.Sprintf(" Generating UX report using %s", styles.BoldBlueTextStyle.Render("pa11y"))
 		s.Start()
 		pa11yReport, err := helpers.GeneratePa11yReport(websiteUrl)
 		s.Stop()
@@ -108,15 +109,18 @@ func (c GenerateUxReportCmd) Handler() {
 			}
 
 			fmt.Println("Saved UX reports to `report.json`")
+		} else {
+			if err := helpers.DisplayInVim(accessibilityReport, "json"); err != nil {
+				utils.LogF(err.Error())
+			}
 		}
-
 	} else {
 		if !helpers.IsLighthouseInstalled() {
-			utils.LogF("Lighthouse is not installed. Install it via running `npm install -g lighthouse`")
+			utils.LogF("❌ Lighthouse is not installed. Install it via running `npm install -g lighthouse`")
 		}
 
 		s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-		s.Suffix = " generating UX report using lighthouse"
+		s.Suffix = fmt.Sprintf(" Generating UX report using %s", styles.BoldBlueTextStyle.Render("lighthouse"))
 		s.Start()
 		lighthouseReport, err := helpers.GenerateLighthouseReport(websiteUrl)
 		if err != nil {
@@ -165,7 +169,7 @@ func (c GenerateUxReportCmd) Handler() {
 		}
 
 		if total != 0 {
-			metrics = append(metrics, fmt.Sprintf("%.2f", score/total))
+			metrics = append(metrics, fmt.Sprintf("%.2f", (score/total)*100))
 		} else {
 			metrics = append(metrics, "0")
 		}
@@ -200,6 +204,10 @@ func (c GenerateUxReportCmd) Handler() {
 
 		if saveReport {
 			if err := os.WriteFile("report.json", buffer.Bytes(), 0644); err != nil {
+				utils.LogF(err.Error())
+			}
+		} else {
+			if err := helpers.DisplayInVim(accessibilityReport, "json"); err != nil {
 				utils.LogF(err.Error())
 			}
 		}
@@ -307,9 +315,30 @@ func (c GenerateUxReportCmd) Handler() {
 6. Total blocking time - %s`, metrics[0], metrics[1], metrics[2], metrics[3], metrics[4], metrics[5]) + "\n\n" + output
 		}
 
-		if err := helpers.DisplayInVim(output); err != nil {
+		homedir, _ := os.UserHomeDir()
+		now := time.Now()
+		historyDirPath := fmt.Sprintf("%s/something_history", homedir)
+
+		if _, err := os.Stat(historyDirPath); os.IsNotExist(err) {
+			err := os.MkdirAll(historyDirPath, 0755)
+			if err != nil {
+				utils.LogF(err.Error())
+			}
+		} else if err != nil {
+			utils.LogF(err.Error())
+		}
+
+		historyFileName := fmt.Sprintf("%s.md", now.Format("02-01-2006 15:04:05"))
+		historyFilePath := fmt.Sprintf("%s/%s", historyDirPath, historyFileName)
+
+		if err := os.WriteFile(historyFilePath, []byte(output), 0644); err != nil {
+			utils.LogF(err.Error())
+		}
+
+		fmt.Printf("Saved AI summary to `~/something_history/%s` file. If required, You can re-refer via that file\n", historyFileName)
+
+		if err := helpers.DisplayInVim(output, "markdown"); err != nil {
 			utils.LogF(err.Error())
 		}
 	}
-
 }
