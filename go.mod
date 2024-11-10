@@ -1,4 +1,4 @@
-module github.com/0xmukesh/ratemywebsite
+module github.com/0xmukesh/insightly
 
 go 1.23.0
 

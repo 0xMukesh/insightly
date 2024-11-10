@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 
-	"github.com/0xmukesh/ratemywebsite/internal/commands"
+	"github.com/0xmukesh/insightly/internal/commands"
 	"github.com/spf13/cobra"
 )
 

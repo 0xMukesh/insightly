@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xmukesh/ratemywebsite/internal/utils"
+	"github.com/0xmukesh/insightly/internal/utils"
 )
 
 func IsNodeInstalled() bool {

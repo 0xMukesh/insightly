@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/0xmukesh/ratemywebsite/internal/helpers"
-	"github.com/0xmukesh/ratemywebsite/internal/utils"
+	"github.com/0xmukesh/insightly/internal/helpers"
+	"github.com/0xmukesh/insightly/internal/utils"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
