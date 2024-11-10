@@ -15,7 +15,7 @@ $ go install github.com/0xmukesh/insightly@latest
 $ insightly COMMAND
 Running command...
 $ insightly (--version)
-insightly version 0.0.1
+insightly version 0.0.4
 $ insightly --help [COMMAND]
 USAGE
   $ insightly COMMAND
