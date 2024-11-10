@@ -208,7 +208,7 @@ func (c ConfigSetCmd) Handler() {
 	var selectedLlms []string
 
 	llmsForm := huh.NewForm(huh.NewGroup(
-		huh.NewNote().Title("something config set").Description("choose the models whose api key you would like to update"),
+		huh.NewNote().Title("insightly config set").Description("choose the models whose api key you would like to update"),
 		huh.NewMultiSelect[string]().Title("choose llms").Options(llmsFormFields...,
 		).Value(&selectedLlms).Filterable(true).Validate(func(s []string) error {
 			if len(s) == 0 {

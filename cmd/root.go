@@ -14,7 +14,7 @@ func Execute() error {
 		Long:    "`insightly` is a CLI that analyzes website's a11y by combining a11y auditing tools with AI powered insights",
 		Example: "insightly",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
+			return cmd.Help()
 		},
 	}
 
