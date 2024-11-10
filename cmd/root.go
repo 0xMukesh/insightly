@@ -10,9 +10,9 @@ import (
 func Execute() error {
 	rootCmd := &cobra.Command{
 		Version: "0.0.1",
-		Use:     "something",
-		Long:    "something is something",
-		Example: "something",
+		Use:     "insightly",
+		Long:    "`insightly` is a CLI that analyzes website's a11y by combining a11y auditing tools with AI powered insights",
+		Example: "insightly",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},

@@ -18,7 +18,7 @@ func (c SetupCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "setup",
 		Short:   "Setup your API keys for different LLMs and store it locally",
-		Example: "something setup",
+		Example: "insightly setup",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
 			c.Args = args

@@ -24,7 +24,7 @@ func (c GenerateUxReportCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "gen-ux",
 		Short:   "Generate UX reports",
-		Example: "something gen-ux [website-url]",
+		Example: "insightly gen-ux [website-url]",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd

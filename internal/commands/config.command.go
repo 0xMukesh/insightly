@@ -32,7 +32,7 @@ func (c ConfigCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "config",
 		Short:   "View/change configuration",
-		Example: "something config [command]",
+		Example: "insightly config [command]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
@@ -59,7 +59,7 @@ func (c ConfigViewCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "view",
 		Short:   "View configuration details",
-		Example: "something config view",
+		Example: "insightly config view",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
 			c.Args = args
@@ -113,7 +113,7 @@ func (c ConfigSetDefaultCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "set-default",
 		Short:   "Change your default LLM",
-		Example: "something config set-default <llm>",
+		Example: "insightly config set-default <llm>",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
@@ -171,7 +171,7 @@ func (c ConfigSetCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "set",
 		Short:   "Update configuration details",
-		Example: "something config set",
+		Example: "insightly config set",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
 			c.Args = args
@@ -253,7 +253,7 @@ func (c ConfigRemoveCmd) New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "remove",
 		Short:   "Remove configuration details of a certain LLM",
-		Example: "something config remove",
+		Example: "insightly config remove",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.Cmd = cmd
 			c.Args = args
