@@ -5,7 +5,7 @@
 # installation
 
 ```bash
-# if you don't have golang already installed, install it from https://go.dev
+# if you don't have golang installed on your machine, go to https://go.dev and install it
 $ go install github.com/0xmukesh/insightly@latest
 ```
 
